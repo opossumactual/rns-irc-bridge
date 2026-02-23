@@ -1,0 +1,20 @@
+[Unit]
+Description=RNS IRC Bridge Server
+After=network.target inspircd.service
+Wants=inspircd.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/rns-irc-bridge
+ExecStart=/usr/bin/python3 /opt/rns-irc-bridge/rns-irc-server.py -c /opt/rns-irc-bridge/config.yaml
+Restart=on-failure
+RestartSec=10
+
+# Logging to journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rns-irc-bridge
+
+[Install]
+WantedBy=multi-user.target

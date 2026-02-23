@@ -1,0 +1,36 @@
+# RNS IRC Bridge Configuration
+# Copy this to config.yaml and edit for your setup.
+
+# Server-side settings (runs on the DO droplet alongside InspIRCd)
+server:
+  # Path to persistent RNS identity file.
+  # This keeps the destination hash stable across restarts.
+  identity_file: ~/.reticulum/irc_server_identity
+
+  # InspIRCd connection (should be bound to localhost only)
+  irc_host: 127.0.0.1
+  irc_port: 6667
+
+  # Optional: path to an alternative Reticulum config directory.
+  # Leave as null to use the default ~/.reticulum/
+  rns_configdir: null
+
+  # How often to re-announce the destination (seconds).
+  # Set to 0 to disable periodic announces.
+  announce_interval: 600
+
+# Client-side settings (runs on your local machine)
+client:
+  # The server's destination hash (printed by rns-irc-server on startup).
+  # Paste the hex string here after starting the server for the first time.
+  server_destination_hash: "abc123..."
+
+  # Local address for IRC clients to connect to.
+  listen_host: 127.0.0.1
+  listen_port: 6667
+
+  # Optional: path to an alternative Reticulum config directory.
+  rns_configdir: null
+
+  # Seconds to wait for a path to the server before giving up.
+  path_request_timeout: 30
