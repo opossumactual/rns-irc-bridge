@@ -54,6 +54,8 @@ class IRCServerBridge:
 
         # Initialize Reticulum
         rns_configdir = self.config.get("rns_configdir")
+        if rns_configdir:
+            rns_configdir = os.path.expanduser(rns_configdir)
         self.reticulum = RNS.Reticulum(rns_configdir)
 
         # Load or create a persistent identity

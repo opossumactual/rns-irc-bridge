@@ -69,6 +69,8 @@ class IRCClientBridge:
 
         # Initialize Reticulum
         rns_configdir = self.config.get("rns_configdir")
+        if rns_configdir:
+            rns_configdir = os.path.expanduser(rns_configdir)
         self.reticulum = RNS.Reticulum(rns_configdir)
 
         # Request path to server if we don't have one

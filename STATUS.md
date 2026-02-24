@@ -1,6 +1,6 @@
 # RNS IRC Bridge - Project Status
 
-## Current State: Code Complete, Awaiting VM Testing
+## Current State: End-to-End Tested, Ready for Deployment
 
 ### Completed
 - [x] `rns-irc-server.py` — Server bridge (RNS Link → TCP to InspIRCd)
@@ -11,19 +11,13 @@
 - [x] `README.md` — Setup and usage docs
 - [x] Syntax verified, RNS 1.1.3 API confirmed available
 - [x] Git repo initialized, initial commit
-
-### Blocked / In Progress
-- [ ] **End-to-end test** — Local testing failed because RNS shared instance
-      doesn't loop back announces to other local processes on the same machine.
-      Need two separate machines (or a VM) for proper testing.
+- [x] **End-to-end test passed** — Tested with ncat echo server on VM (10.15.1.150),
+      bidirectional traffic confirmed through RNS tunnel
+- [x] Bug fix: `os.path.expanduser()` for `rns_configdir` in both scripts
 
 ### Next Steps
-1. Set up a VM with its own Reticulum instance (`share_instance = No`)
-2. Copy `rns-irc-server.py`, `rns-irc-client.py`, `requirements.txt` to VM
-3. On VM: install deps, run fake IRC server or InspIRCd on :6667, start server bridge
-4. On host: run client bridge pointing at server's destination hash
-5. Connect IRC client to localhost:6668 (or whatever port), verify echo works
-6. If working, deploy server bridge to DO droplet for real
+1. Deploy server bridge to DO droplet with InspIRCd
+2. Test with a real IRC client (irssi, WeeChat, HexChat)
 
 ### Architecture Notes
 - Each IRC session = one RNS Link (no multiplexing)
@@ -35,3 +29,4 @@
 ### Known Issues
 - RNS log output is buffered when running in background (cosmetic)
 - Local same-machine testing not possible without rnsd loopback (by design)
+- `rns_configdir` paths with `~` require `os.path.expanduser()` (fixed 2026-02-24)
