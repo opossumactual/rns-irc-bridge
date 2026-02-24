@@ -14,10 +14,11 @@
 - [x] **End-to-end test passed** — Tested with ncat echo server on VM (10.15.1.150),
       bidirectional traffic confirmed through RNS tunnel
 - [x] Bug fix: `os.path.expanduser()` for `rns_configdir` in both scripts
+- [x] **Real IRC test passed** — InspIRCd on VM + irssi client through RNS tunnel,
+      full IRC handshake and operation confirmed (2026-02-24)
 
 ### Next Steps
-1. Deploy server bridge to DO droplet with InspIRCd
-2. Test with a real IRC client (irssi, WeeChat, HexChat)
+1. Deploy server bridge to DO droplet for production use
 
 ### Architecture Notes
 - Each IRC session = one RNS Link (no multiplexing)
