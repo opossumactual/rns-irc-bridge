@@ -1,100 +1,94 @@
 # RNS IRC Bridge
 
-A TCP tunnel bridge that routes IRC traffic through Reticulum's encrypted transport layer. No IRC ports are exposed to the public internet — access is only possible through Reticulum.
+> **Status: In Development** — Functional and tested, but expect rough edges.
+
+A bridge that routes IRC traffic through [Reticulum](https://reticulum.network/)'s encrypted transport layer. No IRC ports are exposed to the public internet — access is only possible through Reticulum.
 
 ## Architecture
 
 ```
-[IRC Client] → localhost:6667 → [rns-irc-client]
-        ↓ (Reticulum encrypted transport)
-[DO Droplet: rns-irc-server] → 127.0.0.1:6667 → [InspIRCd]
+[IRC Client] → localhost:6667 → [rns-irc-client] → (Reticulum encrypted) → [rns-irc-server] → localhost:6667 → [IRC Server]
 ```
 
-Each IRC client connection creates a dedicated RNS Link with its own bidirectional encrypted buffer.
+Each IRC client connection gets its own dedicated RNS Link with end-to-end encryption. Multiple clients can connect simultaneously.
 
-## Prerequisites
-
-- Python 3.10+
-- Reticulum installed and configured on both ends
-- `rnsd` running on the server (DO droplet) with a TCP Server Interface
-- InspIRCd running on the server, bound to `127.0.0.1:6667`
-- Reticulum client configured with a TCP Client Interface pointing to the server
-
-## Installation
+## Quick Start (Client)
 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/opossumactual/rns-irc-bridge.git
+cd rns-irc-bridge
+./setup-client.sh
+./connect.sh
 ```
 
-## Server Setup (DO Droplet)
+The setup script will:
+- Install Python dependencies (`rns`, `pyyaml`)
+- Add the server's TCP interface to your Reticulum config
+- Optionally install irssi
+- Optionally allow connections from other devices on your network (for phones, etc.)
 
-1. Copy files to the server:
+## Manual Client Setup
+
+1. Install dependencies:
    ```bash
-   scp rns-irc-server.py config.example.yaml requirements.txt your-droplet:/opt/rns-irc-bridge/
+   pip install -r requirements.txt
    ```
 
-2. Install dependencies:
+2. Ensure your Reticulum config has a TCP interface to the server network.
+
+3. Run the client bridge:
    ```bash
-   pip install -r /opt/rns-irc-bridge/requirements.txt
+   python3 rns-irc-client.py -c config.yaml
+   ```
+   Or pass the destination hash directly:
+   ```bash
+   python3 rns-irc-client.py <destination_hash>
    ```
 
-3. Create config:
-   ```bash
-   cp /opt/rns-irc-bridge/config.example.yaml /opt/rns-irc-bridge/config.yaml
-   # Edit server section as needed
-   ```
+4. Connect your IRC client to `127.0.0.1:6667`.
 
-4. Test manually:
-   ```bash
-   python3 /opt/rns-irc-bridge/rns-irc-server.py -c /opt/rns-irc-bridge/config.yaml
-   ```
-   Note the **destination hash** printed on startup — you'll need it for the client.
+## Mobile Clients
 
-5. Install systemd service:
+Run the client bridge on a machine your phone can reach and set `listen_host: 0.0.0.0` in `config.yaml`. Then connect a mobile IRC app (Igloo, Palaver, LimeChat, etc.) to that machine's IP on port 6667.
+
+Note: Hosted IRC services like IRCCloud won't work — they connect from their servers, not your device.
+
+## Server Setup
+
+1. Install an IRC server (InspIRCd, ngircd, etc.) bound to `127.0.0.1:6667`.
+
+2. Deploy the server bridge:
    ```bash
+   mkdir -p /opt/rns-irc-bridge
+   cp rns-irc-server.py /opt/rns-irc-bridge/
    cp rns-irc-server.service /etc/systemd/system/
+   ```
+
+3. Create server config:
+   ```yaml
+   server:
+     identity_file: /root/.reticulum/irc_server_identity
+     irc_host: 127.0.0.1
+     irc_port: 6667
+     announce_interval: 600
+   ```
+
+4. Start:
+   ```bash
    systemctl daemon-reload
    systemctl enable --now rns-irc-server
    ```
 
-6. Check logs:
-   ```bash
-   journalctl -u rns-irc-server -f
-   ```
-
-## Client Setup (Local Machine)
-
-1. Copy config:
-   ```bash
-   cp config.example.yaml config.yaml
-   ```
-
-2. Edit `config.yaml` and set `server_destination_hash` to the hash from the server.
-
-3. Run:
-   ```bash
-   python3 rns-irc-client.py -c config.yaml
-   ```
-
-   Or pass the hash directly:
-   ```bash
-   python3 rns-irc-client.py abc123def456...
-   ```
-
-4. Connect your IRC client (irssi, WeeChat, HexChat, etc.) to `127.0.0.1:6667`.
-
-## How It Works
-
-- **Server bridge** announces a stable Reticulum destination using a persistent identity file. When an RNS Link arrives, it opens a TCP socket to InspIRCd and creates a bidirectional `RNS.Buffer` to shuttle bytes between the Link and the socket.
-
-- **Client bridge** listens on a local TCP port. When an IRC client connects, it establishes an RNS Link to the server's destination hash and creates a matching bidirectional buffer. Data flows: IRC client → TCP → RNS Buffer → Reticulum transport → RNS Buffer → TCP → InspIRCd (and back).
-
-- Each IRC session gets its own Link. Sessions are fully isolated.
+The destination hash is printed on first run — share this with clients.
 
 ## Troubleshooting
 
-- **"Timed out waiting for path to server"**: Ensure `rnsd` is running on both ends, the server has announced, and your Reticulum config has a route to the server's network (e.g., a TCPClientInterface).
+- **"Timed out waiting for path to server"**: Make sure `rnsd` is running and your Reticulum config has a route to the server (TCPClientInterface). Try `rnpath <hash>` to check.
 
-- **Connection drops during MOTD/handshake**: This is a stream-based bridge using `RNS.Buffer`, so IRC's chatty handshake should work reliably. If issues occur, check `rnsd` logs for transport errors.
+- **Path found but bridge times out**: Kill any existing `rnsd` and let the bridge start its own Reticulum instance, or vice versa — don't run both competing for the same shared instance.
 
-- **Destination hash changed**: The server uses a persistent identity file. If you delete it, a new one is generated with a different hash. Back up your identity file.
+- **Destination hash changed**: The server uses a persistent identity file. If deleted, a new hash is generated. Back up the identity file.
+
+## License
+
+MIT
