@@ -12,13 +12,27 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo "=== RNS IRC Bridge Client Setup ==="
 echo ""
 
+# Detect package manager
+if command -v apt &>/dev/null; then
+    PKG_MGR="apt"
+    PKG_INSTALL="sudo apt install -y"
+elif command -v pacman &>/dev/null; then
+    PKG_MGR="pacman"
+    PKG_INSTALL="sudo pacman -S --noconfirm"
+elif command -v dnf &>/dev/null; then
+    PKG_MGR="dnf"
+    PKG_INSTALL="sudo dnf install -y"
+else
+    PKG_MGR="unknown"
+fi
+
 # Install Python dependencies
-echo "[1/3] Installing Python dependencies..."
+echo "[1/4] Installing Python dependencies..."
 pip install rns pyyaml --quiet 2>/dev/null || pip install rns pyyaml --break-system-packages --quiet
 
 # Add TCP interface to Reticulum config if not already there
 RNS_CONFIG="$HOME/.reticulum/config"
-echo "[2/3] Checking Reticulum config..."
+echo "[2/4] Checking Reticulum config..."
 
 if [ ! -f "$RNS_CONFIG" ]; then
     echo "  No Reticulum config found. Running rnsd once to generate it..."
@@ -43,7 +57,7 @@ EOF
 fi
 
 # Create client config
-echo "[3/3] Creating client config..."
+echo "[3/4] Creating client config..."
 cat > "$SCRIPT_DIR/config.yaml" << EOF
 client:
   server_destination_hash: "$SERVER_HASH"
@@ -51,9 +65,29 @@ client:
   listen_port: 6667
 EOF
 
+# IRC client
+echo "[4/4] IRC client..."
+echo ""
+echo "  Do you want to install irssi (terminal IRC client)?"
+echo "  1) Yes, install irssi"
+echo "  2) No, I'll use my own IRC client"
+echo ""
+read -p "  Choice [1/2]: " choice
+
+if [ "$choice" = "1" ]; then
+    if command -v irssi &>/dev/null; then
+        echo "  irssi is already installed."
+    elif [ "$PKG_MGR" != "unknown" ]; then
+        echo "  Installing irssi..."
+        $PKG_INSTALL irssi
+    else
+        echo "  Could not detect package manager. Install irssi manually."
+    fi
+fi
+
 echo ""
 echo "=== Setup complete ==="
 echo ""
 echo "To connect:"
 echo "  1. python3 $SCRIPT_DIR/rns-irc-client.py -c $SCRIPT_DIR/config.yaml"
-echo "  2. Point your IRC client at 127.0.0.1:6667"
+echo "  2. In another terminal: irssi -c 127.0.0.1 -p 6667"
