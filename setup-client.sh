@@ -27,12 +27,12 @@ else
 fi
 
 # Install Python dependencies
-echo "[1/4] Installing Python dependencies..."
+echo "[1/5] Installing Python dependencies..."
 pip install rns pyyaml --quiet 2>/dev/null || pip install rns pyyaml --break-system-packages --quiet
 
 # Add TCP interface to Reticulum config if not already there
 RNS_CONFIG="$HOME/.reticulum/config"
-echo "[2/4] Checking Reticulum config..."
+echo "[2/5] Checking Reticulum config..."
 
 if [ ! -f "$RNS_CONFIG" ]; then
     echo "  No Reticulum config found. Running rnsd once to generate it..."
@@ -57,16 +57,30 @@ EOF
 fi
 
 # Create client config
-echo "[3/4] Creating client config..."
+echo "[3/5] Creating client config..."
+echo ""
+echo "  Allow connections from other devices on your network?"
+echo "  (Needed for connecting from a phone or another machine)"
+echo "  1) No, localhost only (127.0.0.1)"
+echo "  2) Yes, accept from any device (0.0.0.0)"
+echo ""
+read -p "  Choice [1/2]: " listen_choice
+
+if [ "$listen_choice" = "2" ]; then
+    LISTEN_HOST="0.0.0.0"
+else
+    LISTEN_HOST="127.0.0.1"
+fi
+
 cat > "$SCRIPT_DIR/config.yaml" << EOF
 client:
   server_destination_hash: "$SERVER_HASH"
-  listen_host: 127.0.0.1
+  listen_host: $LISTEN_HOST
   listen_port: 6667
 EOF
 
 # IRC client
-echo "[4/4] IRC client..."
+echo "[4/5] IRC client..."
 echo ""
 echo "  Do you want to install irssi (terminal IRC client)?"
 echo "  1) Yes, install irssi"
@@ -91,3 +105,7 @@ echo ""
 echo "To connect:"
 echo "  1. python3 $SCRIPT_DIR/rns-irc-client.py -c $SCRIPT_DIR/config.yaml"
 echo "  2. In another terminal: irssi -c 127.0.0.1 -p 6667"
+if [ "$LISTEN_HOST" = "0.0.0.0" ]; then
+    echo ""
+    echo "  Remote devices can connect their IRC client to this machine's IP on port 6667."
+fi
