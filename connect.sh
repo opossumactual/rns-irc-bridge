@@ -1,6 +1,6 @@
 #!/bin/bash
 # RNS IRC Bridge - Connect
-# Starts the bridge and launches irssi.
+# Starts the bridge and launches weechat.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -12,9 +12,9 @@ BRIDGE_PID=$!
 sleep 5
 
 if kill -0 $BRIDGE_PID 2>/dev/null; then
-    echo "Bridge is running. Launching irssi..."
+    echo "Bridge is running. Launching weechat..."
     clear
-    irssi -c 127.0.0.1 -p 6667
+    weechat irc://127.0.0.1:6667
     kill $BRIDGE_PID 2>/dev/null
 else
     echo "Bridge failed to start. Check that rnsd is running."

@@ -24,7 +24,7 @@ cd rns-irc-bridge
 The setup script will:
 - Install Python dependencies (`rns`, `pyyaml`)
 - Add the server's TCP interface to your Reticulum config
-- Optionally install irssi
+- Optionally install weechat
 - Optionally allow connections from other devices on your network (for phones, etc.)
 
 ## Manual Client Setup

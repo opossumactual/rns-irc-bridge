@@ -82,20 +82,20 @@ EOF
 # IRC client
 echo "[4/5] IRC client..."
 echo ""
-echo "  Do you want to install irssi (terminal IRC client)?"
-echo "  1) Yes, install irssi"
+echo "  Do you want to install weechat (terminal IRC client)?"
+echo "  1) Yes, install weechat"
 echo "  2) No, I'll use my own IRC client"
 echo ""
 read -p "  Choice [1/2]: " choice
 
 if [ "$choice" = "1" ]; then
-    if command -v irssi &>/dev/null; then
-        echo "  irssi is already installed."
+    if command -v weechat &>/dev/null; then
+        echo "  weechat is already installed."
     elif [ "$PKG_MGR" != "unknown" ]; then
-        echo "  Installing irssi..."
-        $PKG_INSTALL irssi
+        echo "  Installing weechat..."
+        $PKG_INSTALL weechat
     else
-        echo "  Could not detect package manager. Install irssi manually."
+        echo "  Could not detect package manager. Install weechat manually."
     fi
 fi
 
@@ -104,7 +104,7 @@ echo "=== Setup complete ==="
 echo ""
 echo "To connect:"
 echo "  1. python3 $SCRIPT_DIR/rns-irc-client.py -c $SCRIPT_DIR/config.yaml"
-echo "  2. In another terminal: irssi -c 127.0.0.1 -p 6667"
+echo "  2. In another terminal: weechat irc://127.0.0.1:6667"
 if [ "$LISTEN_HOST" = "0.0.0.0" ]; then
     echo ""
     echo "  Remote devices can connect their IRC client to this machine's IP on port 6667."
