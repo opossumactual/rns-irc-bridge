@@ -2,7 +2,7 @@
 
 A bridge that routes IRC traffic through [Reticulum](https://reticulum.network/)'s encrypted transport layer. No IRC ports are exposed to the public internet — access is only possible through Reticulum.
 
-I recommend using this with irssi because its lightweight, note that the connect.sh script will try to start it.
+I recommend using this with [weechat](https://weechat.org/) — the connect.sh script will try to start it.
 
 ## Architecture
 
