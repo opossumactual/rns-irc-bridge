@@ -126,7 +126,7 @@ Create the bridge config at `/opt/rns-irc-bridge/config.yaml`:
 
 ```yaml
 server:
-  identity_file: /root/.reticulum/irc_server_identity
+  identity_file: ~/.reticulum/irc_server_identity
   irc_host: 127.0.0.1
   irc_port: 6667
   announce_interval: 600
