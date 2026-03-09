@@ -94,7 +94,58 @@ Any device on the LAN can then connect an IRC client to the router's IP on port 
 
 ## Server Setup
 
-### 1. Install InspIRCd
+### 1. Install Reticulum and the Bridge
+
+Install Reticulum and set up the bridge server on your VPS/server:
+
+```bash
+pip install rns pyyaml
+```
+
+Reticulum needs a TCP Server Interface so clients can connect to it over the internet. Edit `~/.reticulum/config` (run `rnsd` once first to generate it) and add an interface:
+
+```
+  [[RNS TCP Server]]
+    type = TCPServerInterface
+    enabled = yes
+    listen_ip = 0.0.0.0
+    listen_port = 4242
+```
+
+Make sure your firewall allows the port (e.g. `ufw allow 4242/tcp`).
+
+Deploy the bridge server:
+
+```bash
+mkdir -p /opt/rns-irc-bridge
+cp rns-irc-server.py /opt/rns-irc-bridge/
+cp rns-irc-server.service /etc/systemd/system/
+```
+
+Create the bridge config at `/opt/rns-irc-bridge/config.yaml`:
+
+```yaml
+server:
+  identity_file: /root/.reticulum/irc_server_identity
+  irc_host: 127.0.0.1
+  irc_port: 6667
+  announce_interval: 600
+```
+
+Start the bridge:
+
+```bash
+systemctl daemon-reload
+systemctl enable --now rns-irc-server
+```
+
+The destination hash is printed on first run — share this with clients. Check it with:
+
+```bash
+journalctl -u rns-irc-server | grep "Destination hash"
+```
+
+### 2. Install InspIRCd
 
 Install InspIRCd and bind it to localhost only:
 
@@ -102,7 +153,7 @@ Install InspIRCd and bind it to localhost only:
 apt install inspircd
 ```
 
-### 2. Configure InspIRCd
+### 3. Configure InspIRCd
 
 Edit `/etc/inspircd/inspircd.conf`. Key settings to change from the defaults:
 
@@ -155,31 +206,12 @@ Then from your IRC client: `/oper yourusername your_password`
 <autojoin channel="#yourchannel">
 ```
 
-### 3. Deploy the bridge
-
-```bash
-mkdir -p /opt/rns-irc-bridge
-cp rns-irc-server.py /opt/rns-irc-bridge/
-cp rns-irc-server.service /etc/systemd/system/
-```
-
-Create server config:
-```yaml
-server:
-  identity_file: /root/.reticulum/irc_server_identity
-  irc_host: 127.0.0.1
-  irc_port: 6667
-  announce_interval: 600
-```
-
 ### 4. Start
 
 ```bash
-systemctl daemon-reload
-systemctl enable --now rns-irc-server
+systemctl restart inspircd
+systemctl restart rns-irc-server
 ```
-
-The destination hash is printed on first run — share this with clients.
 
 ## Troubleshooting
 
