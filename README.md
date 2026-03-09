@@ -1,7 +1,5 @@
 # RNS IRC Bridge
 
-> **Status: In Development** — Functional and tested, but expect rough edges.
-
 A bridge that routes IRC traffic through [Reticulum](https://reticulum.network/)'s encrypted transport layer. No IRC ports are exposed to the public internet — access is only possible through Reticulum.
 
 ## Architecture
@@ -49,35 +47,137 @@ The setup script will:
 
 ## Mobile Clients
 
-Run the client bridge on a machine your phone can reach and set `listen_host: 0.0.0.0` in `config.yaml`. Then connect a mobile IRC app (Igloo, Palaver, LimeChat, etc.) to that machine's IP on port 6667.
+Mobile devices can't run the bridge directly. Instead, run the bridge client on a device your phone can reach over the LAN (a PC, a router, etc.) and point your phone's IRC app at it.
+
+1. Set `listen_host: 0.0.0.0` in your `config.yaml`:
+   ```yaml
+   client:
+     server_destination_hash: <your_hash>
+     listen_host: 0.0.0.0
+   ```
+
+2. Start the bridge on that machine.
+
+3. Connect your phone's IRC app (Revolution IRC, Goggle, Palaver, LimeChat, etc.) to that machine's LAN IP on port 6667.
 
 Note: Hosted IRC services like IRCCloud won't work — they connect from their servers, not your device.
 
+### Router/Gateway Setup (OpenWrt)
+
+If you have an OpenWrt router already running Reticulum (e.g. GL.iNet Flint2), you can run the bridge client directly on it so all devices on the LAN can connect:
+
+1. Copy the client script to the router (OpenWrt needs the `-O` flag for scp):
+   ```bash
+   scp -O rns-irc-client.py root@<router_ip>:~/
+   ```
+
+2. Install pyyaml on the router:
+   ```bash
+   pip install pyyaml
+   ```
+
+3. Create a config:
+   ```bash
+   cat > ~/irc-config.yaml << 'EOF'
+   client:
+     server_destination_hash: <your_hash>
+     listen_host: 0.0.0.0
+   EOF
+   ```
+
+4. Run the bridge:
+   ```bash
+   python3 ~/rns-irc-client.py -c ~/irc-config.yaml
+   ```
+
+Any device on the LAN can then connect an IRC client to the router's IP on port 6667.
+
 ## Server Setup
 
-1. Install an IRC server (InspIRCd, ngircd, etc.) bound to `127.0.0.1:6667`.
+### 1. Install InspIRCd
 
-2. Deploy the server bridge:
-   ```bash
-   mkdir -p /opt/rns-irc-bridge
-   cp rns-irc-server.py /opt/rns-irc-bridge/
-   cp rns-irc-server.service /etc/systemd/system/
-   ```
+Install InspIRCd and bind it to localhost only:
 
-3. Create server config:
-   ```yaml
-   server:
-     identity_file: /root/.reticulum/irc_server_identity
-     irc_host: 127.0.0.1
-     irc_port: 6667
-     announce_interval: 600
-   ```
+```bash
+apt install inspircd
+```
 
-4. Start:
-   ```bash
-   systemctl daemon-reload
-   systemctl enable --now rns-irc-server
-   ```
+### 2. Configure InspIRCd
+
+Edit `/etc/inspircd/inspircd.conf`. Key settings to change from the defaults:
+
+**Connection limits** — Since all connections arrive from the RNS bridge on `127.0.0.1`, per-IP limits apply to all users combined. The default `localmax="3"` will cap your server at 3 total users:
+
+```xml
+<connect allow="127.0.0.1"
+         timeout="60"
+         pingfreq="120"
+         hardsendq="262144"
+         softsendq="8192"
+         recvq="8192"
+         localmax="50"
+         globalmax="50"
+         maxchannels="20">
+```
+
+**Oper access** — Give yourself admin control. Use `host="*@127.0.0.1"` or `host="*@*"`:
+
+```xml
+<oper name="yourusername"
+      password="your_password"
+      host="*@127.0.0.1"
+      type="NetAdmin"
+      maxchans="60">
+```
+
+Then from your IRC client: `/oper yourusername your_password`
+
+**Persistent channels** — Keep channels alive even when empty:
+
+```xml
+<module name="permchannels">
+<permchannels channel="#yourchannel"
+              modes="nt"
+              topic="Welcome">
+```
+
+**Chat history on join** — Show recent messages to users when they join a channel:
+
+```xml
+<module name="chanhistory">
+<chanhistory maxlines="50" prefixmsg="yes">
+```
+
+**Auto-join** — Put new users in a channel automatically:
+
+```xml
+<module name="conn_join">
+<autojoin channel="#yourchannel">
+```
+
+### 3. Deploy the bridge
+
+```bash
+mkdir -p /opt/rns-irc-bridge
+cp rns-irc-server.py /opt/rns-irc-bridge/
+cp rns-irc-server.service /etc/systemd/system/
+```
+
+Create server config:
+```yaml
+server:
+  identity_file: /root/.reticulum/irc_server_identity
+  irc_host: 127.0.0.1
+  irc_port: 6667
+  announce_interval: 600
+```
+
+### 4. Start
+
+```bash
+systemctl daemon-reload
+systemctl enable --now rns-irc-server
+```
 
 The destination hash is printed on first run — share this with clients.
 
@@ -88,6 +188,10 @@ The destination hash is printed on first run — share this with clients.
 - **Path found but bridge times out**: Kill any existing `rnsd` and let the bridge start its own Reticulum instance, or vice versa — don't run both competing for the same shared instance.
 
 - **Destination hash changed**: The server uses a persistent identity file. If deleted, a new hash is generated. Back up the identity file.
+
+- **"Address already in use" on client**: Something is already listening on port 6667. Check with `ss -tlnp | grep 6667`. If you have an IRC server running on the client machine, stop it — you only need the IRC server on the server side.
+
+- **InspIRCd won't start after config changes**: Check the error with `journalctl -u inspircd -e`. Common issues are missing angle brackets on tags or extra spaces in attribute names.
 
 ## License
 

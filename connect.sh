@@ -13,6 +13,7 @@ sleep 5
 
 if kill -0 $BRIDGE_PID 2>/dev/null; then
     echo "Bridge is running. Launching irssi..."
+    clear
     irssi -c 127.0.0.1 -p 6667
     kill $BRIDGE_PID 2>/dev/null
 else
