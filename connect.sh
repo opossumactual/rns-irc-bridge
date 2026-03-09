@@ -14,7 +14,7 @@ sleep 5
 if kill -0 $BRIDGE_PID 2>/dev/null; then
     echo "Bridge is running. Launching weechat..."
     clear
-    weechat irc://127.0.0.1:6667
+    weechat -r "/server add rns 127.0.0.1/6667 -notls; /connect rns"
     kill $BRIDGE_PID 2>/dev/null
 else
     echo "Bridge failed to start. Check that rnsd is running."
