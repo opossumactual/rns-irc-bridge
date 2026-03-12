@@ -4,12 +4,20 @@
 
 set -e
 
-SERVER_HASH="b44e0b2a564aaa7c5117ce38f38dc3e7"
-SERVER_HOST="rns.notconfnet.us"
-SERVER_PORT="4242"
+DEFAULT_HASH="b44e0b2a564aaa7c5117ce38f38dc3e7"
+DEFAULT_HOST="rns.notconfnet.us"
+DEFAULT_PORT="4242"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=== RNS IRC Bridge Client Setup ==="
+echo ""
+
+read -p "Server destination hash [$DEFAULT_HASH]: " SERVER_HASH
+SERVER_HASH="${SERVER_HASH:-$DEFAULT_HASH}"
+read -p "Server hostname [$DEFAULT_HOST]: " SERVER_HOST
+SERVER_HOST="${SERVER_HOST:-$DEFAULT_HOST}"
+read -p "Server port [$DEFAULT_PORT]: " SERVER_PORT
+SERVER_PORT="${SERVER_PORT:-$DEFAULT_PORT}"
 echo ""
 
 # Detect package manager
